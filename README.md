@@ -1,6 +1,8 @@
 # mini-abacus
 一个模拟算盘的微信小程序
 
+![alt](https://github.com/Stormpass/mini-abacus/blob/master/shoot.png?raw=true)
+
 这个小程序只有一个页面，模拟了算盘。
 
 因为小程序架构的原因，视图层与逻辑层分别在不同的原生容器中运行。
