@@ -1,0 +1,50 @@
+<!--index.wxml-->
+<wxs module="beadCtrl" src="../../wxs/bead-down-ctrl.wxs"></wxs>
+<wxs module="beadUpCtrl" src="../../wxs/bead-up-ctrl.wxs"></wxs>
+<view class="full-screen">
+  <view class="window">
+    <view class="down-window">
+      <block wx:for="{{9}}" wx:key="*this" wx:for-item="cloumn">
+        <view class="column-item">
+          <block wx:for="{{5}}" wx:key="*this">
+            <view
+              data-cloumn="{{cloumn}}"
+              data-bead="{{item}}"
+              data-windowwidth="{{windowWidth}}"
+              style="transform: translate({{(item) * 22}}px, -50%)"
+              class="bead-item bead{{cloumn}}{{item}}"
+              bind:touchmove="{{beadCtrl.touchMove}}"
+              bind:touchstart="{{beadCtrl.touchStart}}"
+              bind:touchend="{{beadCtrl.touchEnd}}"
+            >
+              <view class="bead-item-inner"></view>
+            </view>
+          </block>
+        </view>
+      </block>
+    </view>
+    <view class="beam"></view>
+    <view class="up-window">
+      <block wx:for="{{9}}" wx:key="*this" wx:for-item="cloumn">
+        <view class="column-item">
+          <block wx:for="{{2}}" wx:key="*this">
+            <view
+              data-cloumn="{{cloumn}}"
+              data-bead="{{item}}"
+              data-windowwidth="{{windowWidth}}"
+              style="transform: translate({{upWindowWidth - (2 - item) * 22}}px, -50%)"
+              class="bead-item beadup{{cloumn}}{{item}}"
+              bind:touchmove="{{beadUpCtrl.touchMove}}"
+              bind:touchstart="{{beadUpCtrl.touchStart}}"
+              bind:touchend="{{beadUpCtrl.touchEnd}}"
+            >
+              <view class="bead-item-inner"></view>
+            </view>
+          </block>
+        </view>
+      </block>
+    </view>
+  </view>
+</view>
+<audio hidden src="bead-move.mp3"  id="beadMove" bindplay="onPlay" binderror="onError" />
+<view hidden="{{beadUpCtrl.initBeadX(upWindowWidth)}}"></view>

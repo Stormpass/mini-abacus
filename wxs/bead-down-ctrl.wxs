@@ -1,0 +1,160 @@
+var beadsX = {} // 所有珠子的x坐标 state
+var instanceMap = {} // 珠子元素的缓存
+var downWindowWidth = 0 // 可移动窗口的大小
+var beadWidth = 22 // px
+var beadCount = 5 // 珠子的数量
+var cloumnCount = 10 // 列数
+var borderWidth = 10 // 边框的宽度
+var beadELementClassPrefix = 'bead' // 珠子上class的前缀
+var firstEleKey = ''
+var firstEleCloumn = 0
+var firstEleIndex = 0
+var touchStartState = null
+
+var getDownWindowWidth = function (windowWidth) {
+  if (!downWindowWidth) {
+    downWindowWidth = (parseInt(windowWidth) - 30) / 3 * 2
+  }
+  return downWindowWidth
+}
+var getMinXByIndex = function (index) {
+  return index * beadWidth
+}
+var getMaxXByIndex = function (index, downWindowWidth) {
+  return downWindowWidth - (beadCount - index) * beadWidth
+}
+// 初始化X坐标
+for (var i = 0; i < cloumnCount; i++) {
+  for(var j = 0; j < beadCount; j++) {
+    beadsX[i + '' + j] = j * beadWidth
+  }
+}
+// 更新X
+var updateX = function (cloumn, index, newX) {
+  beadsX[cloumn + '' + index] = newX
+}
+
+var updateXByKey = function (key, newX) {
+  beadsX[key] = newX
+}
+
+var getInstance = function (cloumn, index, ownerInstance) {
+  var key = cloumn + '' + index
+  if (!instanceMap[key]) {
+    instanceMap[key] = ownerInstance.selectComponent(beadELementClassPrefix + key)
+  }
+  return instanceMap[key]
+}
+
+var getInstanceByKey = function (key, ownerInstance) {
+  if (!instanceMap[key]) {
+    instanceMap[key] = ownerInstance.selectComponent('.' + beadELementClassPrefix + key)
+  }
+  // console.log('get instance by key', typeof instanceMap[key])
+  return instanceMap[key]
+}
+
+// 判断其他珠子是否需要更新位置
+var updateOtherBeads = function (cloumn, index, ownerInstance) {
+  var targetX = beadsX[cloumn + '' + index]
+  for (var i = 0; i < beadCount; i++) {
+    if (index === i) {
+      continue
+    } else {
+      var key = cloumn + '' + i
+      var minDis = Math.abs((i - index) * beadWidth)
+      var dis = Math.abs(targetX - beadsX[key])
+      // if (i === 0 || i === 1) {
+      //   console.log(key, targetX,beadsX[key],  minDis, dis)
+      // }
+      if (dis < minDis) {
+        var reactEleX = i < index ? targetX - minDis : targetX + minDis
+        var instance = getInstanceByKey(key, ownerInstance)
+        // console.log(' result of getInstanceByKey', typeof instance, typeof instance.setStyle)
+        setTransform(instance, reactEleX)
+        updateXByKey(key, reactEleX)
+      } else {
+        // console.log(key, '无需更改')
+      }
+    }
+  }
+}
+
+var setTransform = function(instance, x) {
+  if (!instance) {
+    console.log('instance is null')
+    return
+  }
+  instance.setStyle({
+    "transform": "translate(" + x + "px, -50%)"
+  })
+}
+// 珠子向右靠齐
+var moveRight = function (cloumn, index, ownerInstance) {
+  for(var i = index; i < beadCount; i++) {
+    setTransform(getInstance(cloumn, i, ownerInstance), getMaxXByIndex(i, downWindowWidth))
+  }
+}
+// 珠子向左靠齐
+var moveLeft = function (cloumn, index, ownerInstance) {
+  for(var i = index; i >= 0; i--) {
+    setTransform(getInstance(cloumn, i, ownerInstance), getMinXByIndex(i, downWindowWidth))
+  }
+}
+
+module.exports = {
+  touchStart: function (event) {
+    var dataset = event.instance.getDataset()
+    firstEleKey = dataset.cloumn + '' + dataset.bead
+    firstEleCloumn = dataset.cloumn
+    firstEleIndex = dataset.bead
+    touchStartState = event.changedTouches[0]
+  },
+  touchEnd: function (event, ownerInstance) {
+    var dataset = event.instance.getDataset()
+    var key = dataset.cloumn + '' + dataset.bead
+    if (key !== firstEleKey) {
+      return
+    }
+    var touchEndState = event.changedTouches[0]
+    var dis = touchEndState.pageX - touchStartState.pageX
+    if (dis > 0) {
+      // console.log('move right')
+      moveRight(firstEleCloumn, firstEleIndex, ownerInstance)
+    } else {
+      // console.log('move left')
+      moveLeft(firstEleCloumn, firstEleIndex, ownerInstance)
+    }
+    firstEleKey = ''
+  },
+  touchMove: function (event, ownerInstance) {
+    // console.log(JSON.stringify(event))
+    var dataset = event.instance.getDataset()
+    var beadIndex = dataset.bead
+    var cloumn = dataset.cloumn
+    var key = cloumn + '' + beadIndex
+    if (!firstEleKey) {
+      firstEleKey = key
+    }
+    // 只处理一个珠子
+    if (firstEleKey !== key) {
+      return
+    }
+
+    var touch = event.changedTouches[0]
+    
+    var downWindowWidth = getDownWindowWidth(dataset.windowwidth)
+
+    var targetMoveX = touch.pageX - borderWidth
+    if (targetMoveX < getMinXByIndex(beadIndex, downWindowWidth)) {
+      targetMoveX = getMinXByIndex(beadIndex, downWindowWidth)
+    } else if (targetMoveX > getMaxXByIndex(beadIndex, downWindowWidth)) {
+      targetMoveX = getMaxXByIndex(beadIndex, downWindowWidth)
+    } else {
+      setTransform(event.instance, targetMoveX)
+    }
+    updateOtherBeads(cloumn, beadIndex, ownerInstance)
+    // 存储新的 x
+    updateX(cloumn, beadIndex, targetMoveX)
+  }
+}
